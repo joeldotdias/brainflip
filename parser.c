@@ -134,28 +134,40 @@ ParseErr parse(const char* src, Program* prog) {
             size_t loop_starts = curr_inst->times;
             size_t j;
             for(j = i + 1; j < prog->size; j++) {
-                if(prog->instructions[j].kind == LoopEnd) {
-                    loop_starts = (loop_starts > prog->instructions[j].times)
-                                      ? loop_starts - prog->instructions[j].times
-                                      : 0;
+                Inst* scan_inst = &prog->instructions[j];
+
+                if(scan_inst->kind == LoopEnd) {
+                    // "saturating" subtraction
+                    if(loop_starts > scan_inst->times) {
+                        loop_starts -= scan_inst->times;
+                    } else {
+                        loop_starts = 0;
+                    }
+
                     if(loop_starts == 0) {
                         curr_inst->end_idx = j + 1;
                         break;
                     }
-                } else if(prog->instructions[j].kind == LoopStart) {
-                    loop_starts += prog->instructions[j].times;
+                } else if(scan_inst->kind == LoopStart) {
+                    loop_starts += scan_inst->times;
                 }
             }
         } else if(curr_inst->kind == LoopEnd) {
-            size_t loop_ends = curr_inst->times;
+            size_t loop_ends = 1;
             size_t j;
 
-            // Find matching loop start
+            // find matching loop start
             for(j = i; j > 0; j--) {
-                if(prog->instructions[j - 1].kind == LoopStart) {
-                    loop_ends = (loop_ends > prog->instructions[j - 1].times)
-                                    ? loop_ends - prog->instructions[j - 1].times
-                                    : 0;
+                Inst* scan_inst = &prog->instructions[j - 1];
+
+                if(scan_inst->kind == LoopStart) {
+                    // Use saturating subtraction
+                    if(loop_ends > scan_inst->times) {
+                        loop_ends -= scan_inst->times;
+                    } else {
+                        loop_ends = 0;
+                    }
+
                     if(loop_ends == 0) {
                         if(i == j) {
                             free_prog(prog);
@@ -164,14 +176,13 @@ ParseErr parse(const char* src, Program* prog) {
                         curr_inst->start_idx = j;
                         break;
                     }
-                } else if(prog->instructions[j - 1].kind == LoopEnd) {
-                    loop_ends += prog->instructions[j - 1].times;
+                } else if(scan_inst->kind == LoopEnd) {
+                    loop_ends += scan_inst->times;
                 }
             }
         }
     }
 
-    /* return (ParseResult){.is_ok = true, .value.ok = prog}; */
     return (ParseErr){.kind = Parse_OK};
 }
 
