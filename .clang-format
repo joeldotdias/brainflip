@@ -1,0 +1,5 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+SpaceBeforeParens: Never
+PointerAlignment: Left
+ColumnLimit: 90
