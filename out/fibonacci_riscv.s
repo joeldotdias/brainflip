@@ -1,19 +1,19 @@
 ### start ###
 .data
-.equ SYS_EXIT, 93    # RISC-V exit syscall number
+.equ SYS_EXIT, 93
 .equ SUCCESS, 9
-.equ SYS_WRITE, 64   # RISC-V write syscall number
+.equ SYS_WRITE, 64
 .equ STDOUT, 1
-.equ SYS_READ, 63    # RISC-V read syscall number
+.equ SYS_READ, 63
 .equ STDIN, 0
 
 .bss
-.comm ARRAY, 30000   # RISC-V uses .comm instead of .lcomm
+.comm ARRAY, 30000
 
 .text
 .global _start
 _start:
-    la s2, ARRAY     # s2 will be our pointer register (equivalent to r12)
+    la s2, ARRAY
 
 	lb t0, 0(s2)
 	beqz t0, LOOP_END_8
@@ -765,6 +765,6 @@ LOOP_END_197:
 
 LOOP_END_200:
 ### end ###
-    li a7, SYS_EXIT      # Exit syscall number
-    li a0, SUCCESS       # Exit code
-    ecall               # Make the syscall
+    li a7, SYS_EXIT
+    li a0, SUCCESS
+    ecall
