@@ -109,6 +109,11 @@ int run(const char* source) {
         return 1;
     }
 
+    /* for(size_t i = 0; i < prog->size; i++) { */
+    /*     print_instruction(&prog->instructions[i]); */
+    /* } */
+    /* printf("\nInstructions: %zu\n", prog->size); */
+
     EvalErr eval_res = eval(prog);
     if(eval_res != Eval_OK) {
         fprintf(stderr, "Eval Error: %s", run_err_message(eval_res));

@@ -40,29 +40,29 @@ Inst make_inst(size_t idx, char ch) {
 }
 
 Program* init_program() {
-    Program* arr = malloc(sizeof(Program));
-    arr->instructions = malloc(sizeof(Inst) * INITIAL_ARR_CAPACITY);
-    arr->size = 0;
-    arr->capacity = INITIAL_ARR_CAPACITY;
-    return arr;
+    Program* prog = malloc(sizeof(Program));
+    prog->instructions = malloc(sizeof(Inst) * INITIAL_ARR_CAPACITY);
+    prog->size = 0;
+    prog->capacity = INITIAL_ARR_CAPACITY;
+    return prog;
 }
 
-void push_inst(Program* arr, Inst inst) {
-    if(arr->size >= arr->capacity) {
-        arr->capacity *= 2;
-        arr->instructions = realloc(arr->instructions, sizeof(Inst) * arr->capacity);
+void push_inst(Program* prog, Inst inst) {
+    if(prog->size >= prog->capacity) {
+        prog->capacity *= 2;
+        prog->instructions = realloc(prog->instructions, sizeof(Inst) * prog->capacity);
     }
 
-    arr->instructions[arr->size++] = inst;
+    prog->instructions[prog->size++] = inst;
 }
 
-Inst* last_inst(Program* arr) {
-    return arr->size > 0 ? &arr->instructions[arr->size - 1] : NULL;
+Inst* last_inst(Program* prog) {
+    return prog->size > 0 ? &prog->instructions[prog->size - 1] : NULL;
 }
 
-void free_prog(Program* arr) {
-    free(arr->instructions);
-    free(arr);
+void free_prog(Program* prog) {
+    free(prog->instructions);
+    free(prog);
 }
 
 ParseErr make_error(ErrKind kind) {
@@ -92,100 +92,6 @@ ParseErr make_error(ErrKind kind) {
     return err;
 }
 
-ParseErr parse(const char* src, Program* prog) {
-    size_t loop_depth = 0;
-
-    for(const char* ch = src; *ch != '\0'; ch++) {
-        // comment
-        if(strchr(INSTS, *ch) == NULL) {
-            continue;
-        }
-
-        if(*ch == ']') {
-            if(loop_depth == 0) {
-                free_prog(prog);
-                return make_error(UnbalancedBrackets);
-            }
-
-            loop_depth--;
-        } else if(*ch == '[') {
-            loop_depth++;
-        }
-
-        Inst curr_inst = make_inst(prog->size, *ch);
-        Inst* prev_inst = last_inst(prog);
-
-        if(prev_inst && prev_inst->kind == curr_inst.kind) {
-            prev_inst->times++;
-        } else {
-            push_inst(prog, curr_inst);
-        }
-    }
-
-    if(loop_depth > 0) {
-        free_prog(prog);
-        return make_error(UnbalancedBrackets);
-    }
-
-    for(size_t i = 0; i < prog->size; i++) {
-        Inst* curr_inst = &prog->instructions[i];
-
-        if(curr_inst->kind == LoopStart) {
-            size_t loop_starts = curr_inst->times;
-            size_t j;
-            for(j = i + 1; j < prog->size; j++) {
-                Inst* scan_inst = &prog->instructions[j];
-
-                if(scan_inst->kind == LoopEnd) {
-                    // "saturating" subtraction
-                    if(loop_starts > scan_inst->times) {
-                        loop_starts -= scan_inst->times;
-                    } else {
-                        loop_starts = 0;
-                    }
-
-                    if(loop_starts == 0) {
-                        curr_inst->end_idx = j + 1;
-                        break;
-                    }
-                } else if(scan_inst->kind == LoopStart) {
-                    loop_starts += scan_inst->times;
-                }
-            }
-        } else if(curr_inst->kind == LoopEnd) {
-            size_t loop_ends = 1;
-            size_t j;
-
-            // find matching loop start
-            for(j = i; j > 0; j--) {
-                Inst* scan_inst = &prog->instructions[j - 1];
-
-                if(scan_inst->kind == LoopStart) {
-                    // Use saturating subtraction
-                    if(loop_ends > scan_inst->times) {
-                        loop_ends -= scan_inst->times;
-                    } else {
-                        loop_ends = 0;
-                    }
-
-                    if(loop_ends == 0) {
-                        if(i == j) {
-                            free_prog(prog);
-                            return make_error(InfiniteLoop);
-                        }
-                        curr_inst->start_idx = j;
-                        break;
-                    }
-                } else if(scan_inst->kind == LoopEnd) {
-                    loop_ends += scan_inst->times;
-                }
-            }
-        }
-    }
-
-    return (ParseErr){.kind = Parse_OK};
-}
-
 const char* inst_kind_to_string(InstKind kind) {
     switch(kind) {
     case IncrPtr:
@@ -207,6 +113,104 @@ const char* inst_kind_to_string(InstKind kind) {
     default:
         return "Unknown";
     }
+}
+
+ParseErr parse(const char* src, Program* prog) {
+    size_t loop_depth = 0;
+
+    for(const char* ch = src; *ch != '\0'; ch++) {
+        if(strchr(INSTS, *ch) == NULL) {
+            continue;
+        }
+
+        if(*ch == ']') {
+            if(loop_depth == 0) {
+                free_prog(prog);
+                return make_error(UnbalancedBrackets);
+            }
+            loop_depth--;
+        } else if(*ch == '[') {
+            loop_depth++;
+        }
+
+        InstKind kind;
+        switch(*ch) {
+        case '+':
+            kind = IncrByte;
+            break;
+        case '-':
+            kind = DecrByte;
+            break;
+        case '>':
+            kind = IncrPtr;
+            break;
+        case '<':
+            kind = DecrPtr;
+            break;
+        case '.':
+            kind = WriteByte;
+            break;
+        case ',':
+            kind = ReadByte;
+            break;
+        case '[':
+            kind = LoopStart;
+            break;
+        case ']':
+            kind = LoopEnd;
+            break;
+        default:
+            continue;
+        }
+
+        Inst curr_inst = {.kind = kind, .idx = prog->size, .times = 1, .start_idx = 0};
+
+        // merge current inst with previous if they're the same
+        Inst* prev_inst = last_inst(prog);
+        if(prev_inst != NULL && prev_inst->kind == kind) {
+            prev_inst->times++;
+        } else {
+            push_inst(prog, curr_inst);
+        }
+    }
+
+    if(loop_depth > 0) {
+        free_prog(prog);
+        return make_error(UnbalancedBrackets);
+    }
+
+    // second pass: link the loops together
+    for(size_t i = 0; i < prog->size; i++) {
+        Inst* curr_inst = &prog->instructions[i];
+        if(curr_inst->kind == LoopStart) {
+            size_t loop_starts = curr_inst->times;
+            for(size_t j = i + 1; j < prog->size; j++) {
+                Inst* scan_inst = &prog->instructions[j];
+                if(scan_inst->kind == LoopEnd) {
+                    size_t loop_ends = scan_inst->times;
+                    if(loop_starts <= loop_ends) {
+                        loop_starts = 0;
+                    } else {
+                        loop_starts -= loop_ends;
+                    }
+                    if(loop_starts == 0) {
+                        curr_inst->end_idx = j + 1;
+                        scan_inst->start_idx = i + 1;
+                        if(i == j - 1) {
+                            free_prog(prog);
+                            return make_error(InfiniteLoop);
+                        }
+                        break;
+                    }
+                } else if(scan_inst->kind == LoopStart) {
+                    loop_starts += scan_inst->times;
+                }
+            }
+        }
+    }
+
+    // oxymoronic return statement
+    return (ParseErr){.kind = Parse_OK};
 }
 void print_instruction(const Inst* inst) {
     printf("{Type: %s, Times: %zu", inst_kind_to_string(inst->kind), inst->times);
