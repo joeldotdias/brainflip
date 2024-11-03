@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <string.h>
 
-#include "interpreter.h"
+#include "compiler.h"
 #include "shared.h"
 
 int main(int argc, char* argv[]) {
@@ -10,7 +11,12 @@ int main(int argc, char* argv[]) {
     }
 
     char* source = read_file(argv[1]);
-    run(source);
+    /* run(source); */
+
+    char* filename = extract_filename(argv[1]);
+    /* get_filename(argv[1], filename, sizeof(filename)); */
+
+    parse_and_compile(source, filename);
 
     return 0;
 }
