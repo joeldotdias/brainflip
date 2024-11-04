@@ -1,7 +1,7 @@
 ### start ###
 .data
 .equ SYS_EXIT, 93
-.equ SUCCESS, 9
+.equ SUCCESS, 0
 .equ SYS_WRITE, 64
 .equ STDOUT, 1
 .equ SYS_READ, 63

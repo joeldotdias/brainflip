@@ -5,7 +5,7 @@
 .data
 
 .equ SYS_EXIT, 60
-.equ SUCCESS, 9
+.equ SUCCESS, 0
 
 .equ SYS_WRITE, 1
 .equ STDOUT, 1
