@@ -1,11 +1,16 @@
 # Brainflip
 
-Currently targets x86_64 and RISC-V 64-bit.
+Implements a runtime visualizer and a compiler that targets x86_64 and RISC-V 64-bit.
 
 All emitted assembly files are in the `out` directory.
 
 ## Usage
 Change the compiler in the Makefile if needed and run `make` to build the binary.
+
+### For the visualizer
+```
+brainflip <file> viz
+```
 
 ### For x86_64
 - Requires `clang`

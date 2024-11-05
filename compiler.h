@@ -1,4 +1,4 @@
-#include "interpreter.h"
+#include "visualizer.h"
 #include <stdbool.h>
 #include <stdio.h>
 

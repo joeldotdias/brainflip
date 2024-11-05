@@ -22,7 +22,8 @@
 .global _start
 
 _start:
-    lea r12, [ARRAY]        # Load the address of ARRAY into r12
+    mov r12, offset ARRAY
+
 
 	addb [r12], 10
 

@@ -12,15 +12,20 @@ int main(int argc, char* argv[]) {
     }
 
     char* source = read_file(argv[1]);
-    /* run(source); --> for interpreter */
 
-    char* filename = extract_filename(argv[1]);
-    bool is_riscv = false;
-    if(argc > 2 && strcmp(argv[2], "riscv") == 0) {
-        is_riscv = true;
+    if(argc > 2 && strcmp(argv[2], "viz") == 0) {
+        // for visualizer
+        run(source);
+    } else {
+        // for compiler
+        char* filename = extract_filename(argv[1]);
+        bool is_riscv = false;
+        if(argc > 2 && strcmp(argv[2], "riscv") == 0) {
+            is_riscv = true;
+        }
+
+        parse_and_compile(source, filename, is_riscv);
     }
-
-    parse_and_compile(source, filename, is_riscv);
 
     return 0;
 }

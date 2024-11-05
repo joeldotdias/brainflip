@@ -153,6 +153,7 @@ int parse_and_compile(const char* source, char* filename, bool is_riscv) {
     /*     print_instruction(&prog->instructions[i]); */
     /* } */
     /* printf("\nInstructions: %zu\n", prog->size); */
+    /* return 1; */
 
     char out_filepath[256];
     strcpy(out_filepath, "out/");
