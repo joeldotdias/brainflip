@@ -57,3 +57,4 @@ typedef struct {
 Program* init_program();
 ParseErr parse(const char* src, Program* prog);
 void print_instruction(const Inst* inst);
+const char* inst_kind_to_string(InstKind kind);

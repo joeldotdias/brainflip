@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
     if(argc > 2 && strcmp(argv[2], "viz") == 0) {
         // for visualizer
-        run(source);
+        visualize(source);
     } else {
         // for compiler
         char* filename = extract_filename(argv[1]);

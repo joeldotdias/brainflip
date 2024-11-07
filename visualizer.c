@@ -6,6 +6,7 @@
 #include "visualizer.h"
 
 #define MEM_CAPACITY 30000
+#define DELAY 200000
 
 Visualizer* init_Visualizer(Visualizer* v, unsigned char* tape, size_t tape_size,
                             size_t width) {
@@ -18,7 +19,7 @@ Visualizer* init_Visualizer(Visualizer* v, unsigned char* tape, size_t tape_size
 }
 
 void update_offset(Visualizer* v) {
-    // adjusting the offset to keep pointer visinle on the screen
+    // adjusting the offset to keep pointer visible on the screen
     if(v->tape_ptr < v->offset) {
         v->offset = v->tape_ptr;
     } else if(v->tape_ptr >= v->offset + v->width) {
@@ -26,7 +27,7 @@ void update_offset(Visualizer* v) {
     }
 }
 
-void draw_visualier(Visualizer* v) {
+void draw_visualier(Visualizer* v, char* out_buf) {
     update_offset(v);
 
     printf(ANSI_CLEAR);
@@ -50,11 +51,13 @@ void draw_visualier(Visualizer* v) {
     }
     printf("│\n");
 
-    // cell values --> . if it is empty
+    // cell values --> '.' if it is empty
+    // bold green makes the . jump up when cell is highlighted
+    // great success
     printf("│");
     for(size_t i = 0; i < v->width && (i + v->offset) < v->tape_size; i++) {
         if(i + v->offset == v->tape_ptr) {
-            printf(ANSI_GREEN);
+            printf(ANSI_BOLD_GREEN);
         }
 
         char c = v->tape[i + v->offset];
@@ -84,7 +87,7 @@ void draw_visualier(Visualizer* v) {
     for(size_t i = 0; i < rel_pos; i++) {
         printf("    ");
     }
-    printf(ANSI_BLUE " ▲" ANSI_RESET "\n");
+    printf(ANSI_BLUE "  ▲" ANSI_RESET "\n");
 
     printf("\nPointer: %zu  Value: %d  ASCII: ", v->tape_ptr, v->tape[v->tape_ptr]);
     if(v->tape[v->tape_ptr] >= 32 && v->tape[v->tape_ptr] <= 126) {
@@ -92,6 +95,11 @@ void draw_visualier(Visualizer* v) {
     } else {
         printf("n/a");
     }
+
+    // buffer contents
+    // every byte written is stored here
+    printf("\nBuffer: %s", out_buf);
+    fflush(stdout);
     printf("\n");
 }
 
@@ -99,6 +107,8 @@ EvalErr eval(Program* prog) {
     unsigned char memory[MEM_CAPACITY] = {0};
     size_t mem_ptr = 0;
     size_t inst_ptr = 0;
+    char out_buffer[1024];
+    size_t out_idx = 0;
 
     Visualizer viz;
     init_Visualizer(&viz, memory, MEM_CAPACITY, 16);
@@ -107,8 +117,8 @@ EvalErr eval(Program* prog) {
         Inst* curr_inst = &prog->instructions[inst_ptr];
 
         viz.tape_ptr = mem_ptr;
-        draw_visualier(&viz);
-        usleep(100000);
+        draw_visualier(&viz, out_buffer);
+        usleep(DELAY);
 
         switch(curr_inst->kind) {
         case IncrPtr:
@@ -139,16 +149,18 @@ EvalErr eval(Program* prog) {
 
         case WriteByte:
             // saving the cursor position before printing
-            printf("\033[s");
+            /* printf("\033[s"); */
 
             for(size_t i = 0; i < curr_inst->times; i++) {
-                if(fputc(memory[mem_ptr], stdout) == EOF) {
-                    return Eval_IOError;
-                }
+                /* if(fputc(memory[mem_ptr], stdout) == EOF) { */
+                /*     return Eval_IOError; */
+                /* } */
+                out_buffer[out_idx] = memory[mem_ptr];
+                out_idx++;
             }
 
             // restoring the cursor position after printing
-            printf("\033[u");
+            /* printf("\033[u"); */
 
             inst_ptr++;
             break;
@@ -207,7 +219,7 @@ char* run_err_message(EvalErr err) {
     return msg;
 }
 
-int run(const char* source) {
+int visualize(const char* source) {
     Program* prog = init_program();
 
     ParseErr result = parse(source, prog);

@@ -4,9 +4,9 @@
 typedef uint8_t u8;
 
 #define ANSI_CLEAR "\033[2J\033[H"
-#define ANSI_BLUE "\033[34m"
-#define ANSI_GREEN "\033[32m"
 #define ANSI_RESET "\033[0m"
+#define ANSI_BLUE "\033[34m"
+#define ANSI_BOLD_GREEN "\033[1;32m"
 
 typedef struct {
     size_t width;
@@ -24,4 +24,4 @@ typedef enum {
     Eval_OK,
 } EvalErr;
 
-int run(const char* source);
+int visualize(const char* source);
